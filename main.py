@@ -8,7 +8,7 @@ from colorama import Fore, Style
 import shutil
 
 package = "com.TrassGames.GodsOfGravity"
-version = "2.0.0"
+version = "2.0.1"
 fallbackconfig = '{"save_key": "false", "start-adb-auto": "true"}'
 
 os.system('cls' if os.name == 'nt' else 'clear')
