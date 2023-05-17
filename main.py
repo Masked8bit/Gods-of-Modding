@@ -11,7 +11,7 @@ package = "com.TrassGames.GodsOfGravity"
 version = "2.0.0"
 fallbackconfig = '{"save_key": "false", "start-adb-auto": "true"}'
 
-os.system("cls")
+os.system('cls' if os.name == 'nt' else 'clear')
 
 headers = {
   'Accept': 'application/json',
@@ -33,7 +33,7 @@ except:
   fconfig.close()
   print("Your configuration file was unable to be properly read. It has been reset to the default configuration.\n")
   input("Press enter to continue.")
-  os.system("cls")
+  os.system('cls' if os.name == 'nt' else 'clear')
   fconfig = open(f"config-{version}.txt", "r")
   rconfig = fconfig.read()
   config = json.loads(rconfig)
@@ -56,7 +56,7 @@ elif(does_keysave_exist==True):
   apikey = keysave.read()
   
 
-os.system("cls")
+os.system('cls' if os.name == 'nt' else 'clear')
 print(f"{Style.BRIGHT}Gods of Modding {Style.RESET_ALL}| {version}\n\nLoading... (connecting to adb)")
 
 if(config["start-adb-auto"]=="true"):
@@ -71,7 +71,7 @@ if(config["start-adb-auto"]=="true"):
   print("\nAn adb server has been automatically started for you as per your configuration file. Please put on your headset and allow USB debugging. Once you're done, hit enter.\n")
   input("Press enter to continue.")
 
-os.system("cls")
+os.system('cls' if os.name == 'nt' else 'clear')
 print(f"{Style.BRIGHT}Gods of Modding {Style.RESET_ALL}| {version}\n\nLoading... (connecting to adb)")
 
 try:
@@ -94,7 +94,7 @@ elif(counter>=2):
   print(f"\n{Style.BRIGHT}{Fore.RED}Multiple devices appear to be connected. Please only connect your headset.{Style.RESET_ALL}")
   exit()
 elif(counter==1):
-  os.system("cls")
+  os.system('cls' if os.name == 'nt' else 'clear')
   print(f"{Style.BRIGHT}Gods of Modding {Style.RESET_ALL}| {version}\n\nGoG installed? {Fore.CYAN}{installed}{Style.RESET_ALL}")
   if(installed==True):
     print(f"{Style.BRIGHT}\nSelect an option:\n{Style.RESET_ALL}[1] Install modded Gods of Gravity\n[2] Uninstall Gods of Gravity\n[0] Exit")
