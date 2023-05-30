@@ -6,60 +6,190 @@ import urllib.request
 import zipfile
 from colorama import Fore, Style
 import shutil
+import tkinter as tk
+from tkinter import ttk, Menu
 
 package = "com.TrassGames.GodsOfGravity"
-version = "2.0.1"
-fallbackconfig = '{"save_key": "false", "start-adb-auto": "true"}'
-
-os.system('cls' if os.name == 'nt' else 'clear')
+version = "3.0.0"
+altver = 5
+# fallbackconfig = '{"save_key": "false", "start-adb-auto": "true"}' // saved in case i readd config
+if os.name == 'nt':
+  win = True
+else:
+  win = false
 
 headers = {
   'Accept': 'application/json',
   'X-Modio-Platform': 'Oculus'
 }
 
-if not os.path.exists(f"config-{version}.txt"):
-  fconfig = open(f"config-{version}.txt", "w")
-  fconfig.write(fallbackconfig)
-  fconfig.close()
+apikey = 0
+adbok = 0
+client = 0
+installed = 0
+installbutton = 0
+uninstallbutton = 0
+headermenu = 0
+# global buttons and variables
 
-fconfig = open(f"config-{version}.txt", "r")
-rconfig = fconfig.read()
-try:
-  config = json.loads(rconfig)
-except:
-  fconfig = open(f"config-{version}.txt", "w")
-  fconfig.write(fallbackconfig)
-  fconfig.close()
-  print("Your configuration file was unable to be properly read. It has been reset to the default configuration.\n")
-  input("Press enter to continue.")
-  os.system('cls' if os.name == 'nt' else 'clear')
-  fconfig = open(f"config-{version}.txt", "r")
-  rconfig = fconfig.read()
-  config = json.loads(rconfig)
-  fconfig.close()
+root = tk.Tk()
+root.title(f"Gods of Modding {version}")
 
-if(config["save_key"]=="true"):
-  does_keysave_exist = os.path.exists("DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt")
-else:
-  does_keysave_exist = False
+def throw_error(msg):
+  print(f"\n{Style.BRIGHT}{Fore.RED}ERROR!{Style.RESET_ALL} {msg}")
+  exit()
 
-if(does_keysave_exist==False):
-  print(f"Hello! Thanks for using Gods of Modding. To get started, you'll need to put your API key in. We'll only use this to download the needed files from mod.io. Don't trust us? Look at the code for yourself.\n\nDon't have one?\nTo make one, follow these steps.\n1. Navigate to https://mod.io/me/access in a web browser\n2. Make sure you're logged in to mod.io.\n3. Make an API key, and paste it in here.\n4. {Style.BRIGHT}{Fore.RED}DO NOT SHARE THIS API KEY!{Style.RESET_ALL}\n")
-  apikey = input("API Key: ")
-  if(config["save_key"]=="true"):
+# thanks https://www.pythontutorial.net/tkinter/
+window_width = 600
+window_height = 400
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+center_x = int(screen_width/2 - window_width / 2)
+center_y = int(screen_height/2 - window_height / 2)
+root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+root.resizable(False, False)
+if win:
+  try:
+    root.iconbitmap('./icon.ico')
+  except:
+    pass
+
+menubar = Menu(root)
+root.config(menu=menubar)
+file_menu = Menu(menubar, tearoff=False)
+help_menu = Menu(menubar, tearoff=False)
+file_menu.add_command(label='Exit',command=root.destroy)
+help_menu.add_command(label='Check for Updates',state=tk.DISABLED)
+menubar.add_cascade(label="File",menu=file_menu)
+menubar.add_cascade(label="Help",menu=help_menu)
+
+def install():
+  headermenu.destroy()
+  installbutton.destroy()
+  if(installed):
+    uninstallbutton.destroy()
+  print(f"{Style.BRIGHT}{Fore.YELLOW}NOTE!{Style.RESET_ALL} The app may appear frozen on the \"Select an option\" page, however it IS working!")
+  infolog = ttk.Label(root,text="Uninstalling Gods of Gravity...",justify=tk.CENTER,wraplength=600)
+  print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Uninstalling Gods of Gravity...")
+  infolog.pack()
+  if(installed==True):
+    devices = client.devices()
+    for device in devices:
+      try:
+        device.uninstall(package)
+      except:
+        throw_error("Uninstall failed.")
+      for device in devices:
+        insta2 = device.is_installed(package)
+      if(insta2==True):
+        throw_error("Uninstall failed.")
+      elif(insta2==False):
+        infolog.configure(text="Downloading modded zip file... (1/2)")
+        print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Downloading modded zip file... (1/2)")
+  else:
+    infolog.configure(text="Downloading modded zip file... (1/2)")
+    print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Downloading modded zip file... (1/2)")
+  r = requests.get('https://api.mod.io/v1/games/5003/mods/2989636/files/3798676', params={'api_key': apikey}, headers = headers)
+  ri = r.json()
+  try:
+    rib = ri["download"]
+  except:
+    throw_error("The needed file could not be downloaded. You probably put in an invalid API key, try deleting \"DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt\".")
+  ribs = rib["binary_url"]
+  infolog.configure(text="Downloading modded zip file... (2/2)")
+  print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Downloading modded zip file... (2/2)")
+  try:
+    urllib.request.urlretrieve(ribs, "build.zip")
+  except:
+    throw_error("Could not retrieve zip file!")
+  infolog.configure(text="Extracting zip file...")
+  with zipfile.ZipFile("build.zip", 'r') as zip_ref:
+    zip_ref.extractall("moddedapk")
+  infolog.configure(text="Installing modded apk...")
+  print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Installing modded apk...")
+  devices = client.devices()
+  for device in devices:
+    try:
+      prevdir = os.getcwd()
+      os.chdir("moddedapk")
+      device.install("build.apk")
+    except:
+      throw_error("An error occured during install. Try:\n- Making sure your headset is in developer mode (enabled in mobile app)\n- Making sure your headset is properly connected\n- You have enough storage space")
+    infolog.configure(text="Cleaning up...")
+    print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Cleaning up...")
+    os.chdir(prevdir)
+    try:
+      os.remove("build.zip")
+      shutil.rmtree("moddedapk")
+    except:
+      print(f"{Style.BRIGHT}{Fore.YELLOW}NOTE!{Style.RESET_ALL} Something went wrong during cleanup. Everything should be fine.")
+    infolog.configure(text="Modded Gods of Gravity installed! Now:\n- Open the game on your headset\n- You will see the Trass Games logo then nothing\n- DO NOT TURN OFF YOUR HEADSET OR EXIT THE APP! Wait for the game to load\n- This will take a few minutes\n- Once you load in, your game should be modded!\n\nIt is now safe to exit the app.")
+
+def uninstall():
+  headermenu.destroy()
+  installbutton.destroy()
+  uninstallbutton.destroy()
+  infolog = ttk.Label(root,text="Uninstalling Gods of Gravity...")
+  infolog.pack()
+  if(installed==True):
+    devices = client.devices()
+    for device in devices:
+      try:
+        device.uninstall(package)
+      except:
+        throw_error("Uninstall failed.")
+      for device in devices:
+        insta2 = device.is_installed(package)
+      if(insta2==True):
+        throw_error("Uninstall failed.")
+      elif(insta2==False):
+        infolog.configure(text="Uninstalled Gods of Gravity!\n\nIt is now safe to exit the app.")
+
+def phase2():
+  adbok.destroy()
+  loading.pack_forget()
+  try:
+    global client
+    client = AdbClient(host="127.0.0.1", port=5037)
+  except:
+    throw_error("Couldn't connect to adb.")
+  devices = client.devices()
+  loading.pack()
+  loading.configure(text="Loading... (checking devices)")
+  counter = 0
+  for device in devices:
+    counter += 1
+    global installed
+    installed = device.is_installed(package)
+  if(counter==0):
+    throw_error("Couldn't find any connected devices. Make sure your headset is plugged in and developer mode is enabled in the mobile app.")
+  elif(counter>=2):
+    throw_error("Multiple devices appear to be connected. Please only connect your headset.")
+  print(f"{Style.BRIGHT}{Fore.YELLOW}DEBUG!{Style.RESET_ALL} Is installed: {installed}")
+  loading.pack_forget()
+  global headermenu
+  headermenu = ttk.Label(root,text="Select an option below.")
+  headermenu.pack()
+  global installbutton
+  installbutton = ttk.Button(root,text="Install",command=install)
+  installbutton.pack()
+  if(installed):
+    global uninstallbutton
+    uninstallbutton = ttk.Button(root,text="Uninstall",command=uninstall)
+    uninstallbutton.pack()
+
+def finishapikey():
+  if(not os.path.exists("DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt")):
+    global apikey
+    apikey = key.get()
+    apinote.destroy()
+    keybox.destroy()
+    enterapikey.destroy()
     keysave = open("DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt", "w")
     keysave.write(apikey)
     keysave.close()
-elif(does_keysave_exist==True):
-  keysave = open("DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt", "r")
-  apikey = keysave.read()
-  
-
-os.system('cls' if os.name == 'nt' else 'clear')
-print(f"{Style.BRIGHT}Gods of Modding {Style.RESET_ALL}| {version}\n\nLoading... (connecting to adb)")
-
-if(config["start-adb-auto"]=="true"):
+  loading.pack()
+  loading.configure(text="Loading... (connecting to adb)")
   try:
     os.system("adb start-server")
   except:
@@ -68,124 +198,26 @@ if(config["start-adb-auto"]=="true"):
     except:
       print("Couldn't start adb.")
       exit()
-  print("\nAn adb server has been automatically started for you as per your configuration file. Please put on your headset and allow USB debugging. Once you're done, hit enter.\n")
-  input("Press enter to continue.")
+  global adbok
+  adbok = ttk.Button(root,text="OK",command=phase2)
+  adbok.pack()
+  loading.configure(text="An adb server has been automatically started. Please put on your headset and allow USB debugging. Once you're done, hit enter.")
+
+loading = ttk.Label(root,text="",justify=tk.CENTER,wraplength=600)
+
+if(os.path.exists("DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt")):
+  keysave = open("DO_NOT_SHARE_THIS_FILE_WITH_ANYBODY_EVER.txt", "r")
+  apikey = keysave.read()
+  finishapikey()
+else:
+  apinote = ttk.Label(root, text="Hello! Thanks for using Gods of Modding. To get started, you'll need to put your API key in. We'll only use this to download the needed files from mod.io. Don't trust us? Look at the code for yourself.\n\nDon't have one?\nTo make one, follow these steps.\n1. Navigate to https://mod.io/me/access in a web browser\n2. Make sure you're logged in to mod.io.\n3. Make an API key, and paste it in here.\n4. DO NOT SHARE THIS API KEY!",justify=tk.CENTER,wraplength=600)
+  apinote.pack()
+  key = tk.StringVar()
+  keybox = ttk.Entry(root,textvariable=key,show="*")
+  keybox.pack()
+  enterapikey = ttk.Button(root,text="OK",command=finishapikey)
+  enterapikey.pack()
 
 os.system('cls' if os.name == 'nt' else 'clear')
-print(f"{Style.BRIGHT}Gods of Modding {Style.RESET_ALL}| {version}\n\nLoading... (connecting to adb)")
-
-try:
-  client = AdbClient(host="127.0.0.1", port=5037)
-except:
-  print(f"\n{Style.BRIGHT}{Fore.RED}Couldn't connect to adb. Make sure to start the adb server.{Style.RESET_ALL}")
-  exit()
-devices = client.devices()
-print("Loading... (checking devices)")
-counter = 0
-
-for device in devices:
-  counter += 1
-  installed = device.is_installed(package)
-
-if(counter==0):
-  print(f"\n{Style.BRIGHT}{Fore.RED}Couldn't find any connected devices. Make sure your headset is plugged in and developer mode is enabled in the mobile app.{Style.RESET_ALL}")
-  exit()
-elif(counter>=2):
-  print(f"\n{Style.BRIGHT}{Fore.RED}Multiple devices appear to be connected. Please only connect your headset.{Style.RESET_ALL}")
-  exit()
-elif(counter==1):
-  os.system('cls' if os.name == 'nt' else 'clear')
-  print(f"{Style.BRIGHT}Gods of Modding {Style.RESET_ALL}| {version}\n\nGoG installed? {Fore.CYAN}{installed}{Style.RESET_ALL}")
-  if(installed==True):
-    print(f"{Style.BRIGHT}\nSelect an option:\n{Style.RESET_ALL}[1] Install modded Gods of Gravity\n[2] Uninstall Gods of Gravity\n[0] Exit")
-  elif(installed==False):
-    print(f"{Style.BRIGHT}\nSelect an option:\n{Style.RESET_ALL}[1] Install modded Gods of Gravity\n[0] Exit")
-  else:
-    print(f"\n{Style.BRIGHT}{Fore.RED}ERROR! Please make an issue on the GitHub.\nError details: The game is not installed but not uninstalled.\nError code: Blobfish")
-    exit()
-  try:
-    v = input("> ")
-  except:
-    print(f"\n{Style.BRIGHT}{Fore.RED}ERROR! Bad input.")
-    exit()
-  if(v=="0"):
-    exit()
-  elif(v=="1"):
-    if(installed==True):
-      print("Uninstalling Gods of Gravity...")
-      for device in devices:
-        try:
-          device.uninstall(package)
-        except:
-          print(f"{Style.BRIGHT}{Fore.RED}ERROR! Uninstall failed.")
-          exit()
-      for device in devices:
-        insta2 = device.is_installed(package)
-      if(insta2==True):
-        print(f"{Style.BRIGHT}{Fore.RED}ERROR! Uninstall failed.")
-        exit()
-      elif(insta2==False):
-        print("Uninstalled Gods of Gravity!")
-    r = requests.get('https://api.mod.io/v1/games/5003/mods/2989636/files/3798676', params={'api_key': apikey}, headers = headers)
-    ri = r.json()
-    try:
-      rib = ri["download"]
-    except:
-      print(f"{Style.BRIGHT}{Fore.RED}ERROR! The needed file could not be installed. You probably put in an invalid API key.{Style.RESET_ALL}")
-      exit()
-    ribs = rib["binary_url"]
-    print("Downloading file...")
-    try:
-      urllib.request.urlretrieve(ribs, "build.zip")
-    except:
-      print(f"{Style.BRIGHT}{Fore.RED}Failed to download file.")
-      exit()
-    print("File download completed!\nExtracting zip file...")
-    with zipfile.ZipFile("build.zip", 'r') as zip_ref:
-      zip_ref.extractall("moddedapk")
-    print("Zip file extracted!\nInstalling modded apk...")
-    for device in devices:
-      try:
-        prevdir = os.getcwd()
-        os.chdir("moddedapk")
-        device.install("build.apk")
-      except:
-        print(f"\n{Style.BRIGHT}{Fore.RED}An error occured during install. Try:\n- Making sure your headset is in developer mode (enabled in mobile app)\n- Making sure your headset is properly connected\n- Rerunning this script{Style.RESET_ALL}")
-        exit()
-      print("Modded apk installed!\nCleaning up...")
-      os.chdir(prevdir)
-      try:
-        os.remove("build.zip")
-        shutil.rmtree("moddedapk")
-      except:
-        print("Something went wrong during cleanup. Everything should be fine.")
-      print(f"{Style.BRIGHT}{Fore.GREEN}Modded Gods of Gravity installed!{Style.RESET_ALL} {Style.BRIGHT}Now:{Style.RESET_ALL}\n- Open the game on your headset\n- You will see the Trass Games logo then nothing\n- DO NOT TURN OFF YOUR HEADSET OR EXIT THE APP! Wait for the game to load\n- This will take a few minutes\n- Once you load in, your game should be modded!")
-      exit()
-    else:
-      print(f"\n{Style.BRIGHT}{Fore.RED}ERROR! Please make an issue on the GitHub.\nError details: The game is not installed but not uninstalled.\nError code: Second Blobfish{Style.RESET_ALL}")
-      exit()
-  elif(v=="2"):
-    if(installed==True):
-      print("Uninstalling Gods of Gravity...")
-      for device in devices:
-        try:
-          device.uninstall(package)
-        except:
-          print(f"{Style.BRIGHT}{Fore.RED}ERROR! Uninstall failed.{Style.RESET_ALL}")
-          exit()
-      for device in devices:
-        insta2 = device.is_installed(package)
-      if(insta2==True):
-        print(f"{Style.BRIGHT}{Fore.RED}ERROR! Uninstall failed.{Style.RESET_ALL}")
-        exit()
-      elif(insta2==False):
-        print("Uninstalled Gods of Gravity!")
-        exit()
-      else:
-        print(f"{Style.BRIGHT}{Fore.RED}\nERROR! Please make an issue on the GitHub.\nError details: The game is not installed but not uninstalled.\nError code: Third Blobfish")
-        exit()
-  else:
-    print(f"\n{Style.BRIGHT}{Fore.RED}ERROR! Bad input.")
-else:
-  print(f"{Style.BRIGHT}{Fore.RED}\nERROR! Please make an issue on the GitHub.\nError details: The counter is not zero, is not one, and is not equal to or above two.\nError code: Jellyfish")
-  exit()
+print(f"GUI starting!\n{Style.BRIGHT}{Fore.YELLOW}NOTE!{Style.RESET_ALL} To close the program, use the \"x\" button on the window or \"File > Exit\". Do not close the program during install!")
+root.mainloop()
