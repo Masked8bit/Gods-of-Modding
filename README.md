@@ -3,13 +3,13 @@ A Python tool for easily installing the modded version of the VR game "Gods of G
 
 ## Compatibility
 Below is a chart for computer OS compatibility.
-|Computer OS|Compatible?|
-|---|---|
-|Windows 10/11|Yes!|
-|Windows 8/8.1|Unsure|
-|Windows 7 and older|Unsure|
-|Linux|Unsure|
-|macOS|Unsure|
+|Computer OS|Compatible?|Official support?|
+|---|---|---|
+|Windows 10/11|✅|✅|
+|Windows 8/8.1|❓|❌|
+|Windows 7 and older|❓|❌|
+|Linux|❓|❓|
+|macOS|❓|❓|
 
 ## Dependencies
 The Python dependencies can be easily installed using pip. Simply download the [latest release](https://github.com/Masked8bit/Gods-of-Modding/releases/latest), extract the zip file, and run the command `pip install -r requirements.txt`.
